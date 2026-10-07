@@ -24,3 +24,6 @@ yarn-error.log*
 
 # Wrangler local cache
 /.wrangler
+
+# Build-time SSR bundle (deleted after prerendering)
+/build-ssr

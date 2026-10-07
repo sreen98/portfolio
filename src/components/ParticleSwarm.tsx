@@ -1,13 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import * as THREE from "three";
 
 // Width of the name in its own units; the group is scaled to fit the layout.
 const NAME_W = 4.6;
-// How long each phase lasts before morphing to the next one.
-const PHASES = [
-  { shape: "name", hold: 7000 },
-  { shape: "cloud", hold: 500 },
-];
+type Shape = "name" | "cloud";
+// How long each shape holds before morphing to the other one.
+const HOLD_MS: Record<Shape, number> = { name: 7000, cloud: 500 };
 const MORPH_MS = 2200;
 
 const vertexShader = /* glsl */ `
@@ -86,7 +84,7 @@ const fragmentShader = /* glsl */ `
 `;
 
 /** Loose cloud the name bursts into and re-forms from. */
-function cloud(n) {
+function cloud(n: number): Float32Array {
   const out = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) {
     const u = Math.random() * 2 - 1;
@@ -100,10 +98,17 @@ function cloud(n) {
   return out;
 }
 
+interface TextShape {
+  positions: Float32Array;
+  /** x where the last word starts, so it can be coloured separately. */
+  splitX: number;
+}
+
 /** Samples the filled pixels of `label` drawn on a canvas, centred, NAME_W wide. */
-function text(n, label) {
+function text(n: number, label: string): TextShape | null {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
   const font = '800 expanded 160px "Archivo", sans-serif';
   ctx.font = font;
   const w = Math.ceil(ctx.measureText(label).width) + 40;
@@ -116,26 +121,34 @@ function text(n, label) {
   ctx.textBaseline = "middle";
   ctx.fillText(label, w / 2, h / 2 + 6);
   const data = ctx.getImageData(0, 0, w, h).data;
-  const filled = [];
+  const filled: number[] = [];
   for (let y = 0; y < h; y += 2) {
     for (let x = 0; x < w; x += 2) {
-      if (data[(y * w + x) * 4 + 3] > 128) filled.push(x, y);
+      if ((data[(y * w + x) * 4 + 3] ?? 0) > 128) filled.push(x, y);
     }
   }
-  if (!filled.length) return cloud(n);
-  const out = new Float32Array(n * 3);
+  if (!filled.length) return null;
+  const positions = new Float32Array(n * 3);
   const scale = NAME_W / w;
-  // x where the last word starts, so it can be coloured separately.
-  const lastWord = label.lastIndexOf(" ") + 1;
-  const textW = ctx.measureText(label).width;
-  out.splitX = (w / 2 - textW / 2 + ctx.measureText(label.slice(0, lastWord)).width - w / 2) * scale;
   for (let i = 0; i < n; i++) {
     const k = Math.floor(Math.random() * (filled.length / 2)) * 2;
-    out[i * 3] = (filled[k] - w / 2 + Math.random() * 2) * scale;
-    out[i * 3 + 1] = -(filled[k + 1] - h / 2 + Math.random() * 2) * scale;
-    out[i * 3 + 2] = (Math.random() - 0.5) * 0.2;
+    positions[i * 3] = ((filled[k] ?? 0) - w / 2 + Math.random() * 2) * scale;
+    positions[i * 3 + 1] = -((filled[k + 1] ?? 0) - h / 2 + Math.random() * 2) * scale;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 0.2;
   }
-  return out;
+  const lastWord = label.lastIndexOf(" ") + 1;
+  const textW = ctx.measureText(label).width;
+  const splitX = (ctx.measureText(label.slice(0, lastWord)).width - textW / 2) * scale;
+  return { positions, splitX };
+}
+
+interface ParticleSwarmProps {
+  label?: string;
+  /** Hero copy; the name is placed in the free space beside it. */
+  textRef?: RefObject<HTMLElement | null>;
+  /** Reserved space above the copy on phones and portrait tablets. */
+  slotRef?: RefObject<HTMLElement | null>;
+  className?: string;
 }
 
 /**
@@ -143,16 +156,17 @@ function text(n, label) {
  * seconds and re-forms, and scatters away from the cursor. Pauses itself
  * when scrolled out of view.
  */
-export default function ParticleSwarm({ label = "Sreenath P", textRef, slotRef, className = "" }) {
-  const mountRef = useRef(null);
+export default function ParticleSwarm({ label = "Sreenath P", textRef, slotRef, className = "" }: ParticleSwarmProps) {
+  const mountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const mount = mountRef.current;
+    if (!mount) return undefined;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const isSmall = window.innerWidth < 768;
     const count = isSmall ? 7000 : 15000;
 
-    let renderer;
+    let renderer: THREE.WebGLRenderer;
     try {
       renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, powerPreference: "high-performance" });
     } catch {
@@ -168,23 +182,29 @@ export default function ParticleSwarm({ label = "Sreenath P", textRef, slotRef, 
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     camera.position.set(0, 0, 7.5);
 
-    const shapes = { cloud: cloud(count), name: null };
-    const getShape = (name) => {
-      if (!shapes[name]) {
-        shapes[name] = text(count, label);
-        uniforms.uSplitX.value = shapes[name].splitX ?? 99;
-        measureName(shapes[name]);
+    const cloudPositions = cloud(count);
+    let namePositions: Float32Array | null = null;
+    // The name is sampled lazily, once the display font has loaded.
+    const getShape = (shape: Shape): Float32Array => {
+      if (shape === "cloud") return cloudPositions;
+      if (!namePositions) {
+        const built = text(count, label);
+        namePositions = built?.positions ?? cloudPositions;
+        uniforms.uSplitX.value = built?.splitX ?? 99;
+        measureName(namePositions);
         layout();
       }
-      return shapes[name];
+      return namePositions;
     };
 
     const geometry = new THREE.BufferGeometry();
     const rand = new Float32Array(count);
     for (let i = 0; i < count; i++) rand[i] = Math.random();
-    geometry.setAttribute("position", new THREE.BufferAttribute(shapes.cloud.slice(), 3));
-    geometry.setAttribute("aFrom", new THREE.BufferAttribute(shapes.cloud.slice(), 3));
-    geometry.setAttribute("aTo", new THREE.BufferAttribute(shapes.cloud.slice(), 3));
+    const fromAttr = new THREE.BufferAttribute(cloudPositions.slice(), 3);
+    const toAttr = new THREE.BufferAttribute(cloudPositions.slice(), 3);
+    geometry.setAttribute("position", new THREE.BufferAttribute(cloudPositions.slice(), 3));
+    geometry.setAttribute("aFrom", fromAttr);
+    geometry.setAttribute("aTo", toAttr);
     geometry.setAttribute("aRand", new THREE.BufferAttribute(rand, 1));
     geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 5);
 
@@ -214,12 +234,13 @@ export default function ParticleSwarm({ label = "Sreenath P", textRef, slotRef, 
 
     // Height / width of the sampled name, refined once the name is built.
     let nameAspect = 0.22;
-    const measureName = (arr) => {
+    const measureName = (positions: Float32Array) => {
       let lo = Infinity;
       let hi = -Infinity;
-      for (let i = 1; i < arr.length; i += 3) {
-        lo = Math.min(lo, arr[i]);
-        hi = Math.max(hi, arr[i]);
+      for (let i = 1; i < positions.length; i += 3) {
+        const y = positions[i] ?? 0;
+        lo = Math.min(lo, y);
+        hi = Math.max(hi, y);
       }
       nameAspect = (hi - lo) / NAME_W;
     };
@@ -235,20 +256,25 @@ export default function ParticleSwarm({ label = "Sreenath P", textRef, slotRef, 
       const halfW = halfH * camera.aspect;
       const slot = slotRef?.current?.getBoundingClientRect();
       const textEl = textRef?.current;
-      let cx;
-      let cy;
-      let widthPx;
+      let cx: number;
+      let cy: number;
+      let widthPx: number;
       if (slot && slot.height > 0) {
         widthPx = Math.min(slot.width, slot.height / nameAspect);
         cx = slot.left + slot.width / 2;
         cy = slot.top + slot.height / 2;
       } else if (textEl) {
+        const heading = textEl.querySelector("h1");
+        if (!heading) {
+          group.visible = false;
+          return;
+        }
         let textRight = m.left;
         textEl.querySelectorAll("h1, p, [data-measure]").forEach((el) => {
           range.selectNodeContents(el);
           textRight = Math.max(textRight, range.getBoundingClientRect().right);
         });
-        const h1 = textEl.querySelector("h1").getBoundingClientRect();
+        const h1 = heading.getBoundingClientRect();
         const left = textRight + 40;
         const right = m.right - 32;
         widthPx = Math.max(0, Math.min(right - left, m.width * 0.42, (h1.height * 0.8) / nameAspect));
@@ -262,7 +288,11 @@ export default function ParticleSwarm({ label = "Sreenath P", textRef, slotRef, 
       group.visible = widthPx >= 120;
       const unitsPerPx = (halfW * 2) / m.width;
       group.scale.setScalar((widthPx * unitsPerPx) / NAME_W);
-      group.position.set(((cx - m.left) / m.width) * 2 * halfW - halfW, halfH - ((cy - m.top) / m.height) * 2 * halfH, 0);
+      group.position.set(
+        ((cx - m.left) / m.width) * 2 * halfW - halfW,
+        halfH - ((cy - m.top) / m.height) * 2 * halfH,
+        0,
+      );
     };
 
     const resize = () => {
@@ -286,7 +316,7 @@ export default function ParticleSwarm({ label = "Sreenath P", textRef, slotRef, 
     const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
     const hit = new THREE.Vector3();
     const target = { x: 0, y: 0, active: false };
-    const onPointerMove = (e) => {
+    const onPointerMove = (e: PointerEvent) => {
       const rect = mount.getBoundingClientRect();
       ndc.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
       raycaster.setFromCamera(ndc, camera);
@@ -302,19 +332,17 @@ export default function ParticleSwarm({ label = "Sreenath P", textRef, slotRef, 
     document.addEventListener("pointerleave", onPointerLeave);
 
     // Phase cycle: start as a cloud, assemble the name once the font is ready.
-    const fromAttr = geometry.getAttribute("aFrom");
-    const toAttr = geometry.getAttribute("aTo");
-    let phase = PHASES.length - 1; // "cloud"
+    let phase: Shape = "cloud";
     let morphStart = -Infinity;
     let nextSwitch = Infinity;
-    const goTo = (index, now) => {
+    const goTo = (shape: Shape, now: number) => {
       fromAttr.array.set(toAttr.array);
-      phase = index;
-      toAttr.array.set(getShape(PHASES[phase].shape));
+      phase = shape;
+      toAttr.array.set(getShape(shape));
       fromAttr.needsUpdate = true;
       toAttr.needsUpdate = true;
       morphStart = now;
-      nextSwitch = reduceMotion ? Infinity : now + MORPH_MS + PHASES[phase].hold;
+      nextSwitch = reduceMotion ? Infinity : now + MORPH_MS + HOLD_MS[shape];
     };
     let cancelled = false;
     const fontReady = Promise.race([
@@ -328,9 +356,9 @@ export default function ParticleSwarm({ label = "Sreenath P", textRef, slotRef, 
         toAttr.array.set(getShape("name"));
         fromAttr.array.set(toAttr.array);
         fromAttr.needsUpdate = toAttr.needsUpdate = true;
-        phase = 0;
+        phase = "name";
       } else {
-        goTo(0, performance.now());
+        goTo("name", performance.now());
       }
     });
 
@@ -339,7 +367,7 @@ export default function ParticleSwarm({ label = "Sreenath P", textRef, slotRef, 
     let raf = 0;
     let time = 0;
     const io = new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting;
+      visible = entry?.isIntersecting ?? false;
       if (visible && !raf) {
         last = performance.now();
         raf = requestAnimationFrame(tick);
@@ -347,7 +375,7 @@ export default function ParticleSwarm({ label = "Sreenath P", textRef, slotRef, 
     });
     io.observe(mount);
 
-    const tick = (now) => {
+    const tick = (now: number) => {
       raf = 0;
       if (!visible) return;
       const dt = Math.min((now - last) / 1000, 0.05);
@@ -355,10 +383,10 @@ export default function ParticleSwarm({ label = "Sreenath P", textRef, slotRef, 
       if (!reduceMotion) time += dt;
       uniforms.uTime.value = time;
 
-      if (now >= nextSwitch && !document.hidden) goTo((phase + 1) % PHASES.length, now);
+      if (now >= nextSwitch && !document.hidden) goTo(phase === "name" ? "cloud" : "name", now);
       const progress = Math.min((now - morphStart) / MORPH_MS, 1);
       uniforms.uProgress.value = progress;
-      const settledGoal = PHASES[phase].shape === "name" && progress >= 1 ? 1 : 0;
+      const settledGoal = phase === "name" && progress >= 1 ? 1 : 0;
       uniforms.uSettled.value += (settledGoal - uniforms.uSettled.value) * 0.03;
 
       const strengthGoal = target.active ? 1 : 0;

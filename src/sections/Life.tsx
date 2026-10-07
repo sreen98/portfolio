@@ -3,11 +3,17 @@ import { FiArrowUpRight } from "react-icons/fi";
 import { GiCricketBat, GiWeightLiftingUp } from "react-icons/gi";
 import { Reveal, SectionHeading, SpotlightCard } from "../components/ui";
 import { life } from "../data/resume";
+import type { TravelStop } from "../types";
 
 // Alternating tilt so the postcards look tossed on a table; hover squares them up.
 const tilts = ["-rotate-3", "rotate-2", "-rotate-2", "rotate-3"];
 
-function Postcard({ place, index }) {
+interface PostcardProps {
+  place: TravelStop;
+  index: number;
+}
+
+function Postcard({ place, index }: PostcardProps) {
   return (
     <figure
       className={`${tilts[index % tilts.length]} rounded-xl bg-white/[0.06] p-1.5 shadow-xl shadow-black/50 ring-1 ring-white/10 transition duration-500 hover:z-10 hover:-translate-y-2 hover:rotate-0 hover:scale-[1.04]`}
@@ -31,10 +37,10 @@ function Postcard({ place, index }) {
 
 export default function Life() {
   const { travel, cricket, gym, writing } = life;
-  const article = writing[0];
+  const [article] = writing;
 
   return (
-    <section id="life" className="relative mx-auto max-w-6xl scroll-mt-24 px-6 py-28 md:py-36">
+    <section id="life" className="relative mx-auto max-w-6xl scroll-mt-24 px-6 py-14 md:py-20">
       <SectionHeading title="Outside work">I love travelling, going to the gym and playing cricket.</SectionHeading>
 
       <div className="grid gap-5 lg:grid-cols-3">
@@ -43,14 +49,15 @@ export default function Life() {
           <SpotlightCard className="h-full p-6 sm:p-7">
             <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
               <div>
-                <p className="font-mono text-xs uppercase tracking-[0.2em] text-stone-500">Travel</p>
-                <h3 className="mt-1 font-display text-2xl font-semibold text-white">
-                  {travel.length} countries
-                </h3>
+                <p className="font-mono text-xs uppercase tracking-[0.2em] text-stone-400">Travel</p>
+                <h3 className="mt-1 font-display text-2xl font-semibold text-white">{travel.length} countries</h3>
               </div>
               <ul className="flex gap-1.5">
                 {travel.map((place) => (
-                  <li key={place.code} className="rounded-md border border-white/10 px-2 py-0.5 font-mono text-[11px] text-stone-300">
+                  <li
+                    key={place.code}
+                    className="rounded-md border border-white/10 px-2 py-0.5 font-mono text-[11px] text-stone-300"
+                  >
                     {place.code}
                   </li>
                 ))}
@@ -105,7 +112,7 @@ export default function Life() {
               <div className="relative aspect-[16/9] overflow-hidden rounded-t-3xl">
                 <img
                   src={article.cover}
-                  alt="Snowy mountain lake in Kazakhstan"
+                  alt={article.coverAlt}
                   loading="lazy"
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
@@ -114,7 +121,7 @@ export default function Life() {
                 </span>
               </div>
               <div className="flex flex-1 flex-col p-6">
-                <p className="font-mono text-xs uppercase tracking-[0.2em] text-stone-500">Writing</p>
+                <p className="font-mono text-xs uppercase tracking-[0.2em] text-stone-400">Writing</p>
                 <h3 className="mt-1 font-display text-lg font-semibold leading-snug text-white">{article.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-stone-400">{article.blurb}</p>
                 <span className="mt-auto inline-flex items-center gap-1 pt-5 text-sm text-accent">
@@ -126,7 +133,6 @@ export default function Life() {
           </SpotlightCard>
         </Reveal>
       </div>
-
     </section>
   );
 }

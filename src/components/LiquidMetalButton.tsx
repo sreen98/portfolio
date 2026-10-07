@@ -1,20 +1,29 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type AnchorHTMLAttributes, type ReactNode } from "react";
 import { createLiquidMetal } from "./liquidMetal";
 
 /**
  * A real <a> with ThreeUI's liquid-metal shader rendered behind it.
  * Falls back to a plain dark pill when WebGL2 is unavailable.
  */
-export default function LiquidMetalButton({ href, children, className = "", ...rest }) {
-  const hostRef = useRef(null);
-  const canvasRef = useRef(null);
-  const linkRef = useRef(null);
+interface LiquidMetalButtonProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
+  href: string;
+  children: ReactNode;
+}
+
+export default function LiquidMetalButton({ href, children, className = "", ...rest }: LiquidMetalButtonProps) {
+  const hostRef = useRef<HTMLSpanElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const linkRef = useRef<HTMLAnchorElement>(null);
   const [fallback, setFallback] = useState(false);
 
   useEffect(() => {
-    let destroy = null;
+    const canvas = canvasRef.current;
+    const button = linkRef.current;
+    const host = hostRef.current;
+    if (!canvas || !button || !host) return undefined;
+    let destroy: (() => void) | null = null;
     try {
-      destroy = createLiquidMetal({ canvas: canvasRef.current, button: linkRef.current, host: hostRef.current });
+      destroy = createLiquidMetal({ canvas, button, host });
     } catch {
       destroy = null;
     }

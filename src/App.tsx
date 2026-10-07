@@ -22,9 +22,9 @@ export default function App() {
         <Life />
         <Contact />
       </main>
-      <footer className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 pb-10 pt-6 text-sm text-stone-500 sm:flex-row">
+      <footer className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 pb-10 pt-6 text-sm text-stone-400 sm:flex-row">
         <p>
-          © {new Date().getFullYear()} {profile.name}
+          © <span suppressHydrationWarning>{new Date().getFullYear()}</span> {profile.name}
         </p>
         <p>Built with React, Three.js &amp; Framer Motion.</p>
       </footer>

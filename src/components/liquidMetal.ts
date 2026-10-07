@@ -429,28 +429,66 @@ const R = {
   ptrVref: 4.5       // cursor speed, in button heights/sec, that counts as "fast"
 };
 
-function sh(gl, type, src) {
+// Every uniform the programs above declare. Locations start as null so a
+// uniform the driver optimised away is simply skipped by gl.uniform*.
+const UNIFORMS = [
+  "uC", "uHalf", "uT", "uHover", "uPress", "uRip", "uRipK", "uRipK2", "uPtr", "uPtrK",
+  "uP", "uE", "uBw", "uTex", "uTex2", "uDstTexel", "uSrcTexel", "uAdd", "uTexel", "uDir",
+  "uR", "uSoft", "uRim", "uGlow", "uRes", "uGlowGain", "uGlowIn", "uOccl", "uDim", "uPunch",
+] as const;
+type UniformName = (typeof UNIFORMS)[number];
+
+interface Program {
+  p: WebGLProgram;
+  u: Record<UniformName, WebGLUniformLocation | null>;
+}
+
+interface Target {
+  tex: WebGLTexture;
+  fbo: WebGLFramebuffer;
+  w: number;
+  h: number;
+}
+
+function sh(gl: WebGL2RenderingContext, type: number, src: string): WebGLShader {
   const s = gl.createShader(type);
+  if (!s) throw new Error("Could not create shader");
   gl.shaderSource(s, src);
   gl.compileShader(s);
-  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) ?? "Shader compile failed");
   return s;
 }
 
-function prog(gl, fs) {
+function prog(gl: WebGL2RenderingContext, fs: string): Program {
   const p = gl.createProgram();
   gl.attachShader(p, sh(gl, gl.VERTEX_SHADER, VERT));
   gl.attachShader(p, sh(gl, gl.FRAGMENT_SHADER, fs));
   gl.bindAttribLocation(p, 0, "position");
   gl.linkProgram(p);
-  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
-  const u = {};
-  const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) ?? "Program link failed");
+  const u = Object.fromEntries(UNIFORMS.map((name) => [name, null])) as Program["u"];
+  const n: number = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
   for (let i = 0; i < n; i++) {
     const info = gl.getActiveUniform(p, i);
-    u[info.name.replace("[0]", "")] = gl.getUniformLocation(p, info.name);
+    if (!info) continue;
+    const name = info.name.replace("[0]", "");
+    if ((UNIFORMS as readonly string[]).includes(name)) {
+      u[name as UniformName] = gl.getUniformLocation(p, info.name);
+    } else if (import.meta.env.DEV) {
+      console.warn(`liquidMetal: shader uniform "${name}" is not in UNIFORMS, so it will never be set.`);
+    }
   }
   return { p, u };
+}
+
+/** Values of a tuning object in declaration order, for a uniform float array. */
+const valuesOf = <T extends Record<string, number>>(obj: T) =>
+  new Float32Array((Object.keys(obj) as (keyof T)[]).map((key) => obj[key]));
+
+interface LiquidMetalOptions {
+  canvas: HTMLCanvasElement;
+  button: HTMLElement;
+  host: HTMLElement;
 }
 
 /**
@@ -458,7 +496,7 @@ function prog(gl, fs) {
  * data-hot / data-press on `host` for CSS. Returns a cleanup function, or null
  * when WebGL2 is unavailable (the button still works, just without the metal).
  */
-export function createLiquidMetal({ canvas, button, host }) {
+export function createLiquidMetal({ canvas, button, host }: LiquidMetalOptions): (() => void) | null {
   const gl = canvas.getContext("webgl2", { alpha: true, antialias: false, premultipliedAlpha: true });
   if (!gl) return null;
 
@@ -477,7 +515,7 @@ export function createLiquidMetal({ canvas, button, host }) {
   gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
   const hasFloat = !!gl.getExtension("EXT_color_buffer_half_float");
-  const makeTarget = () => {
+  const makeTarget = (): Target => {
     const tex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -489,7 +527,7 @@ export function createLiquidMetal({ canvas, button, host }) {
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
     return { tex, fbo, w: 0, h: 0 };
   };
-  const sizeTarget = (t, w, h) => {
+  const sizeTarget = (t: Target, w: number, h: number) => {
     if (t.w === w && t.h === h) return;
     t.w = w;
     t.h = h;
@@ -505,7 +543,13 @@ export function createLiquidMetal({ canvas, button, host }) {
   const T_b = makeTarget();
   const targets = [T_core, T_rim, T_s1, T_s2, T_a, T_b];
 
-  let W = 0, H = 0, DPR = 1, BW = 0, BH = 0, CX = 0, CY = 0;
+  let W = 0,
+    H = 0,
+    DPR = 1,
+    BW = 0,
+    BH = 0,
+    CX = 0,
+    CY = 0;
   let DOWN = 4;
   const GLOW_TEX = 129;
   let needResize = true;
@@ -543,49 +587,54 @@ export function createLiquidMetal({ canvas, button, host }) {
   ro.observe(canvas);
   ro.observe(button);
 
-  const drawTo = (t) => {
+  const drawTo = (t: Target | null) => {
     gl.bindFramebuffer(gl.FRAMEBUFFER, t ? t.fbo : null);
     gl.viewport(0, 0, t ? t.w : W, t ? t.h : H);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   };
 
-  const PKEYS = Object.keys(P);
-  const EKEYS = Object.keys(E);
-  const uArr = new Float32Array(PKEYS.map((key) => P[key]));
-  const eArr = new Float32Array(EKEYS.map((key) => E[key]));
+  const uArr = valuesOf(P);
+  const eArr = valuesOf(E);
 
-  let hover = 0, hoverTarget = 0, clock = 0, last = performance.now();
+  let hover = 0,
+    hoverTarget = 0,
+    clock = 0,
+    last = performance.now();
   // three ripple slots, reused round-robin so rapid taps overlap
   const RIP = [0, 1, 2].map(() => ({ x: 0, y: 0, t: -99, on: 0 }));
   const ripArr = new Float32Array(12);
-  let ripNext = 0, press = 0, pressTarget = 0;
+  let ripNext = 0,
+    press = 0,
+    pressTarget = 0;
   // the cursor well: a target the metal chases, plus how fast it is being moved
   const ptr = { x: 0, y: 0 };
   const ptrS = { x: 0, y: 0 };
-  let ptrAmt = 0, ptrSpeed = 0;
+  let ptrAmt = 0,
+    ptrSpeed = 0;
   const on = { over: false, press: false, focus: false };
 
-  const addRipple = (x, y) => {
+  const addRipple = (x: number, y: number) => {
     const r = RIP[ripNext];
     ripNext = (ripNext + 1) % RIP.length;
+    if (!r) return;
     r.x = x;
     r.y = y;
     r.t = clock;
     r.on = 1;
   };
   // pointer position -> button-height units from the pill centre, +y down
-  const localPt = (e) => {
+  const localPt = (e: PointerEvent): [number, number] => {
     const b = button.getBoundingClientRect();
     const s = b.height;
     return [(e.clientX - (b.left + b.width / 2)) / s, (e.clientY - (b.top + b.height / 2)) / s];
   };
 
   const calm = window.matchMedia("(prefers-reduced-motion: reduce)");
-  let drawn = null; // signature of the last frame actually drawn
+  let drawn: string | null = null; // signature of the last frame actually drawn
   let raf = 0;
   let visible = true;
 
-  const setShared = (pr) => {
+  const setShared = (pr: Program) => {
     gl.uniform2f(pr.u.uC, CX, CY);
     gl.uniform2f(pr.u.uHalf, BW / 2, BH / 2);
     gl.uniform1f(pr.u.uT, clock);
@@ -693,7 +742,7 @@ export function createLiquidMetal({ canvas, button, host }) {
     drawTo(null);
   };
 
-  const frame = (now) => {
+  const frame = (now: number) => {
     raf = 0;
     if (!visible) return;
     const dt = Math.min((now - last) / 1000, 1 / 20);
@@ -710,11 +759,10 @@ export function createLiquidMetal({ canvas, button, host }) {
     press += (pressTarget - press) * pk;
     if (Math.abs(pressTarget - press) < 0.002) press = pressTarget;
 
-    for (let i = 0; i < RIP.length; i++) {
-      const r = RIP[i];
+    RIP.forEach((r, i) => {
       if (r.on && clock - r.t > 4) r.on = 0;
       ripArr.set([r.x, r.y, r.t, r.on], i * 4);
-    }
+    });
     const ripLive = RIP.some((r) => r.on);
 
     // the well trails the cursor and swells with how fast it is being dragged
@@ -748,7 +796,18 @@ export function createLiquidMetal({ canvas, button, host }) {
     host.toggleAttribute("data-press", on.press);
   };
 
-  const onEnter = (e) => {
+  // Listeners are registered through these helpers so cleanup can't miss one.
+  const cleanups: (() => void)[] = [];
+  const onButton = <K extends keyof HTMLElementEventMap>(type: K, fn: (e: HTMLElementEventMap[K]) => void) => {
+    button.addEventListener(type, fn, { passive: true });
+    cleanups.push(() => button.removeEventListener(type, fn));
+  };
+  const onWindow = <K extends keyof WindowEventMap>(type: K, fn: (e: WindowEventMap[K]) => void) => {
+    window.addEventListener(type, fn, { passive: true });
+    cleanups.push(() => window.removeEventListener(type, fn));
+  };
+
+  onButton("pointerenter", (e) => {
     if (e.pointerType !== "mouse") return;
     // land the well where the cursor actually entered, not where it last was
     [ptr.x, ptr.y] = localPt(e);
@@ -757,66 +816,54 @@ export function createLiquidMetal({ canvas, button, host }) {
     ptrSpeed = 0;
     on.over = true;
     sync();
-  };
-  const onLeave = (e) => {
+  });
+  onButton("pointerleave", (e) => {
     if (e.pointerType !== "mouse") return;
     on.over = false;
     sync();
-  };
-  const onMove = (e) => {
+  });
+  onWindow("pointermove", (e) => {
     if (!on.over && !on.press) return;
     [ptr.x, ptr.y] = localPt(e);
-  };
-  const onDown = (e) => {
+  });
+  onButton("pointerdown", (e) => {
     [ptr.x, ptr.y] = localPt(e);
     on.press = true;
     sync();
     addRipple(ptr.x, ptr.y);
-  };
-  const onUp = () => {
+  });
+  const release = () => {
     if (!on.press) return;
     on.press = false;
     sync();
   };
+  onWindow("pointerup", release);
+  onWindow("pointercancel", release);
   // only keyboard focus keeps it lit
-  const onFocus = () => {
+  onButton("focus", () => {
     on.focus = button.matches(":focus-visible");
     sync();
-  };
-  const onBlur = () => {
+  });
+  onButton("blur", () => {
     on.focus = false;
     sync();
-  };
+  });
   // keyboard activation ripples from the centre
-  const onKeyDown = (e) => {
+  onButton("keydown", (e) => {
     if ((e.key !== "Enter" && e.key !== " ") || e.repeat) return;
     on.press = true;
     sync();
     addRipple(0, 0);
-  };
-  const onKeyUp = (e) => {
+  });
+  onButton("keyup", (e) => {
     if (e.key !== "Enter" && e.key !== " ") return;
     on.press = false;
     sync();
-  };
-
-  const listeners = [
-    [button, "pointerenter", onEnter],
-    [button, "pointerleave", onLeave],
-    [window, "pointermove", onMove],
-    [button, "pointerdown", onDown],
-    [window, "pointerup", onUp],
-    [window, "pointercancel", onUp],
-    [button, "focus", onFocus],
-    [button, "blur", onBlur],
-    [button, "keydown", onKeyDown],
-    [button, "keyup", onKeyUp],
-  ];
-  listeners.forEach(([target, type, fn]) => target.addEventListener(type, fn, { passive: true }));
+  });
 
   // Pause the render loop while the button is scrolled away.
   const io = new IntersectionObserver(([entry]) => {
-    visible = entry.isIntersecting;
+    visible = entry?.isIntersecting ?? false;
     if (visible && !raf) {
       last = performance.now();
       drawn = null;
@@ -832,7 +879,7 @@ export function createLiquidMetal({ canvas, button, host }) {
     cancelAnimationFrame(raf);
     io.disconnect();
     ro.disconnect();
-    listeners.forEach(([target, type, fn]) => target.removeEventListener(type, fn));
+    cleanups.forEach((off) => off());
     targets.forEach((t) => {
       gl.deleteTexture(t.tex);
       gl.deleteFramebuffer(t.fbo);

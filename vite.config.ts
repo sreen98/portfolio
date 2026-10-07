@@ -7,4 +7,9 @@ export default defineConfig({
   // Keep CRA's output folder so existing hosting config keeps working.
   // three.js lives in its own lazy chunk (~130 kB gzip), so allow it.
   build: { outDir: "build", chunkSizeWarningLimit: 600 },
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./src/test/setup.ts"],
+    css: false,
+  },
 });

@@ -1,56 +1,70 @@
 import { FiArrowUpRight } from "react-icons/fi";
 import { Reveal, SectionHeading, SpotlightCard } from "../components/ui";
-import { prephub, projects } from "../data/resume";
+import { projects } from "../data/resume";
+import type { Project } from "../types";
 
-const byId = Object.fromEntries(projects.map((p) => [p.id, p]));
+interface FrameProps {
+  src: string;
+  alt: string;
+  className?: string;
+}
 
-function BrowserFrame({ src, alt, url, className = "" }) {
+function BrowserFrame({ src, alt, url, className = "" }: FrameProps & { url: string }) {
   return (
-    <div className={`overflow-hidden rounded-xl border border-white/10 bg-ink-800 shadow-2xl shadow-black/60 ${className}`}>
+    <div
+      className={`overflow-hidden rounded-xl border border-white/10 bg-ink-800 shadow-2xl shadow-black/60 ${className}`}
+    >
       <div className="flex items-center gap-1.5 border-b border-white/[0.06] px-3 py-2">
         <span className="h-2 w-2 rounded-full bg-white/15" />
         <span className="h-2 w-2 rounded-full bg-white/15" />
         <span className="h-2 w-2 rounded-full bg-white/15" />
-        <span className="ml-3 truncate rounded-md bg-white/[0.05] px-2 py-0.5 font-mono text-[10px] text-stone-500">{url}</span>
+        <span className="ml-3 truncate rounded-md bg-white/[0.05] px-2 py-0.5 font-mono text-[10px] text-stone-400">
+          {url}
+        </span>
       </div>
-      <img src={src} alt={alt} loading="lazy" className="block w-full" />
+      <img src={src} alt={alt} width={1200} height={750} loading="lazy" className="block h-auto w-full" />
     </div>
   );
 }
 
-function PhoneFrame({ src, alt, className = "" }) {
+function PhoneFrame({ src, alt, className = "" }: FrameProps) {
   return (
     <div className={`rounded-[1.6rem] border border-white/15 bg-black p-1.5 shadow-2xl shadow-black/70 ${className}`}>
-      <img src={src} alt={alt} loading="lazy" className="block w-full rounded-[1.2rem]" />
+      <img
+        src={src}
+        alt={alt}
+        width={360}
+        height={780}
+        loading="lazy"
+        className="block h-auto w-full rounded-[1.2rem]"
+      />
     </div>
   );
 }
 
-function Header({ project }) {
+function Header({ project }: { project: Project }) {
   return (
     <>
       <div className="mb-5 flex items-center gap-3">
         {project.icon ? (
-          <img src={project.icon} alt="" className="h-10 w-10 rounded-xl" />
+          <img src={project.icon} alt="" width={40} height={40} className="h-10 w-10 rounded-xl" />
         ) : (
-          <span
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 font-display font-bold text-white"
-          >
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 font-display font-bold text-white">
             {project.name[0]}
           </span>
         )}
         <div>
           <h3 className="font-display text-xl font-semibold text-white">{project.name}</h3>
-          <p className="text-xs text-stone-500">{project.kind}</p>
+          <p className="text-xs text-stone-400">{project.kind}</p>
         </div>
       </div>
       <p className="text-[15px] leading-relaxed text-stone-400">{project.description}</p>
-      {project.note && <p className="mt-3 text-sm leading-relaxed text-stone-500">{project.note}</p>}
+      {project.note && <p className="mt-3 text-sm leading-relaxed text-stone-400">{project.note}</p>}
     </>
   );
 }
 
-function Footer({ project }) {
+function Footer({ project }: { project: Project }) {
   return (
     <div className="relative z-10 mt-6">
       <ul className="mb-4 flex flex-wrap gap-1.5">
@@ -79,10 +93,10 @@ function Footer({ project }) {
 }
 
 export default function Projects() {
-  const { ethra, geovault, ajhomes, tastemagic } = byId;
+  const { ethra, geovault, ajhomes, tastemagic, prephub } = projects;
 
   return (
-    <section id="projects" className="relative mx-auto max-w-6xl scroll-mt-24 px-6 py-28 md:py-36">
+    <section id="projects" className="relative mx-auto max-w-6xl scroll-mt-24 px-6 py-14 md:py-20">
       <SectionHeading title="Projects" />
 
       <div className="grid gap-5 lg:grid-cols-3">
@@ -149,7 +163,7 @@ export default function Projects() {
         <Reveal delay={0.16}>
           <SpotlightCard className="flex h-full flex-col p-7">
             <div className="mb-7 rounded-xl border border-white/10 bg-ink-800/80 p-4">
-              <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-stone-500">Workspace modules</p>
+              <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-stone-400">Workspace modules</p>
               <ul className="flex flex-wrap gap-1.5">
                 {tastemagic.modules.map((m, i) => (
                   <li
@@ -179,7 +193,7 @@ export default function Projects() {
                   {prephub.stats.map((stat) => (
                     <div key={stat.label} className="border-t border-white/10 pt-3">
                       <dd className="font-display text-2xl font-bold text-white">{stat.value}</dd>
-                      <dt className="mt-1 text-xs text-stone-500">{stat.label}</dt>
+                      <dt className="mt-1 text-xs text-stone-400">{stat.label}</dt>
                     </div>
                   ))}
                 </dl>

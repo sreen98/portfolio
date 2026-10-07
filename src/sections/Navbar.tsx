@@ -3,7 +3,13 @@ import { AnimatePresence, motion, useScroll, useSpring } from "framer-motion";
 import { HiOutlineMenuAlt4, HiX } from "react-icons/hi";
 import { profile } from "../data/resume";
 
-const links = [
+interface NavLink {
+  id: string;
+  label: string;
+  href?: string;
+}
+
+const links: NavLink[] = [
   { id: "about", label: "About" },
   { id: "experience", label: "Experience" },
   { id: "projects", label: "Projects" },
@@ -36,7 +42,7 @@ export default function Navbar() {
       (entries) => {
         entries.forEach((entry) => entry.isIntersecting && setActive(entry.target.id));
       },
-      { rootMargin: "-45% 0px -50% 0px" }
+      { rootMargin: "-45% 0px -50% 0px" },
     );
     links.forEach(({ id }) => {
       const el = document.getElementById(id);
@@ -50,10 +56,7 @@ export default function Navbar() {
 
   return (
     <>
-      <motion.div
-        className="fixed inset-x-0 top-0 z-50 h-[2px] origin-left bg-accent"
-        style={{ scaleX: progress }}
-      />
+      <motion.div className="fixed inset-x-0 top-0 z-50 h-[2px] origin-left bg-accent" style={{ scaleX: progress }} />
       <motion.header
         initial={{ y: -40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -121,20 +124,22 @@ export default function Navbar() {
             className="fixed inset-0 z-30 flex overflow-y-auto bg-ink-950/95 px-8 pb-8 pt-24 backdrop-blur-xl lg:hidden"
           >
             <nav className="m-auto flex w-full max-w-md flex-col gap-1" aria-label="Mobile">
-              {[...links, { id: "resume", label: "Download resume", href: profile.resume }].map(({ id, label, href }, i) => (
-                <motion.a
-                  key={id}
-                  href={href || `#${id}`}
-                  download={href ? true : undefined}
-                  onClick={() => setOpen(false)}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.05 * i }}
-                  className="py-1 font-display text-[clamp(1.4rem,5vh,2.25rem)] font-semibold text-white"
-                >
-                  {label}
-                </motion.a>
-              ))}
+              {[...links, { id: "resume", label: "Download resume", href: profile.resume } satisfies NavLink].map(
+                ({ id, label, href }, i) => (
+                  <motion.a
+                    key={id}
+                    href={href || `#${id}`}
+                    download={href ? true : undefined}
+                    onClick={() => setOpen(false)}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.05 * i }}
+                    className="py-1 font-display text-[clamp(1.4rem,5vh,2.25rem)] font-semibold text-white"
+                  >
+                    {label}
+                  </motion.a>
+                ),
+              )}
             </nav>
           </motion.div>
         )}

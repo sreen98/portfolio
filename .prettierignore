@@ -1,0 +1,8 @@
+build
+coverage
+node_modules
+.wrangler
+package-lock.json
+public
+# The ported ThreeUI shader and tuning blocks keep their original hand-aligned layout.
+src/components/liquidMetal.ts

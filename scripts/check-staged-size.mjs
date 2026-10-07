@@ -9,9 +9,7 @@ const staged = execSync("git diff --cached --name-only --diff-filter=ACMR", { en
   .split("\n")
   .filter(Boolean);
 
-const tooBig = staged
-  .map((file) => ({ file, size: statSync(file).size }))
-  .filter(({ size }) => size > LIMIT);
+const tooBig = staged.map((file) => ({ file, size: statSync(file).size })).filter(({ size }) => size > LIMIT);
 
 if (tooBig.length) {
   console.error("\nThese staged files are over 1 MB:");

@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { FaGithub, FaInstagram, FaLinkedinIn, FaMedium } from "react-icons/fa";
 import { FiArrowRight, FiArrowUpRight, FiCheck, FiCopy, FiDownload, FiMail, FiPhone } from "react-icons/fi";
+import ClientOnly from "../components/ClientOnly";
 import { Reveal } from "../components/ui";
 import { globe, profile } from "../data/resume";
 
@@ -32,7 +33,7 @@ export default function Contact() {
   ];
 
   return (
-    <section id="contact" className="relative scroll-mt-24 px-4 py-20 sm:px-6">
+    <section id="contact" className="relative scroll-mt-24 px-4 py-12 sm:px-6 md:py-16">
       <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[2rem] border border-white/[0.08] bg-ink-900">
         <div className="relative grid items-center gap-6 px-6 py-16 sm:px-12 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:py-20">
           <div className="min-w-0">
@@ -85,12 +86,12 @@ export default function Contact() {
             <Reveal delay={0.22} className="mt-6 flex flex-wrap items-center gap-3">
               <a href={`tel:${profile.phone.replace(/-/g, "")}`} className={linkClass}>
                 <FiPhone /> {profile.phone}
-                <FiArrowRight className="text-stone-500 transition-transform group-hover:translate-x-0.5 group-hover:text-accent" />
+                <FiArrowRight className="text-stone-400 transition-transform group-hover:translate-x-0.5 group-hover:text-accent" />
               </a>
               {links.map(({ href, label, Icon }) => (
                 <a key={label} href={href} target="_blank" rel="noreferrer" className={linkClass}>
                   <Icon /> {label}
-                  <FiArrowUpRight className="text-stone-500 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-accent" />
+                  <FiArrowUpRight className="text-stone-400 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-accent" />
                 </a>
               ))}
               <a href={profile.resume} download className={linkClass}>
@@ -101,9 +102,11 @@ export default function Contact() {
 
           <Reveal delay={0.1} className="relative min-w-0">
             <div className="relative mx-auto aspect-square w-full max-w-[460px]">
-              <Suspense fallback={null}>
-                <Globe home={globe.home} places={globe.places} className="absolute inset-0" />
-              </Suspense>
+              <ClientOnly>
+                <Suspense fallback={null}>
+                  <Globe home={globe.home} places={globe.places} className="absolute inset-0" />
+                </Suspense>
+              </ClientOnly>
             </div>
             <ul className="mx-auto flex max-w-[460px] flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-stone-400">
               <li className="inline-flex items-center gap-1.5">

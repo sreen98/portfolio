@@ -9,7 +9,7 @@ export default function Experience() {
   const scaleY = useSpring(scrollYProgress, { stiffness: 120, damping: 30 });
 
   return (
-    <section id="experience" className="relative mx-auto max-w-6xl scroll-mt-24 px-6 py-28 md:py-36">
+    <section id="experience" className="relative mx-auto max-w-6xl scroll-mt-24 px-6 py-14 md:py-20">
       <SectionHeading title="Experience" />
 
       <div ref={listRef} className="relative">
@@ -24,7 +24,7 @@ export default function Experience() {
             <div key={job.company} className="relative grid gap-8 md:grid-cols-[30%_1fr]">
               <div className="pl-10 md:sticky md:top-28 md:self-start md:pl-0 md:pr-12 md:text-right">
                 <Reveal>
-                  <p className="font-mono text-xs uppercase tracking-[0.2em] text-stone-500">{job.period}</p>
+                  <p className="font-mono text-xs uppercase tracking-[0.2em] text-stone-400">{job.period}</p>
                   <h3 className="mt-3 font-display text-3xl font-semibold text-white">{job.company}</h3>
                   <p className="mt-1 text-stone-400">
                     {job.title} · {job.location}

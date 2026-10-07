@@ -1,6 +1,7 @@
-/** @type {import('tailwindcss').Config} */
+import type { Config } from "tailwindcss";
+
 export default {
-  content: ["./index.html", "./src/**/*.{js,jsx}"],
+  content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
@@ -16,11 +17,11 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['"IBM Plex Sans"', "system-ui", "sans-serif"],
-        display: ['"Archivo"', '"IBM Plex Sans"', "sans-serif"],
+        sans: ['"IBM Plex Sans"', '"IBM Plex Sans Fallback"', "system-ui", "sans-serif"],
+        display: ['"Archivo"', '"Archivo Fallback"', "sans-serif"],
         mono: ['"IBM Plex Mono"', "ui-monospace", "monospace"],
       },
     },
   },
   plugins: [],
-};
+} satisfies Config;

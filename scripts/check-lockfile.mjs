@@ -12,7 +12,9 @@ for (const field of ["dependencies", "devDependencies"]) {
   const have = root[field] ?? {};
   for (const name of new Set([...Object.keys(want), ...Object.keys(have)])) {
     if (want[name] !== have[name]) {
-      problems.push(`${field}.${name}: package.json has ${want[name] ?? "nothing"}, lockfile has ${have[name] ?? "nothing"}`);
+      problems.push(
+        `${field}.${name}: package.json has ${want[name] ?? "nothing"}, lockfile has ${have[name] ?? "nothing"}`,
+      );
     }
   }
 }

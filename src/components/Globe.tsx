@@ -1,24 +1,27 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { LAND_MASK, LAND_POINTS } from "../data/landMask";
+import type { Place } from "../types";
 
 const GOLDEN = Math.PI * (3 - Math.sqrt(5));
 
-// Longitude is measured the same way landMask.js was generated, with z flipped
+// Longitude is measured the same way landMask.ts was generated, with z flipped
 // so east sits to the right when the globe faces the camera.
-function latLon(lat, lon, radius = 1) {
+function latLon(lat: number, lon: number, radius = 1) {
   const phi = THREE.MathUtils.degToRad(lat);
   const theta = THREE.MathUtils.degToRad(lon + 180);
-  return new THREE.Vector3(Math.cos(phi) * Math.cos(theta), Math.sin(phi), -Math.cos(phi) * Math.sin(theta)).multiplyScalar(
-    radius
-  );
+  return new THREE.Vector3(
+    Math.cos(phi) * Math.cos(theta),
+    Math.sin(phi),
+    -Math.cos(phi) * Math.sin(theta),
+  ).multiplyScalar(radius);
 }
 
 function landDots() {
   const bytes = Uint8Array.from(atob(LAND_MASK), (c) => c.charCodeAt(0));
-  const out = [];
+  const out: number[] = [];
   for (let i = 0; i < LAND_POINTS; i++) {
-    if (!(bytes[i >> 3] & (1 << (i & 7)))) continue;
+    if (!((bytes[i >> 3] ?? 0) & (1 << (i & 7)))) continue;
     const y = 1 - (i / (LAND_POINTS - 1)) * 2;
     const r = Math.sqrt(1 - y * y);
     const theta = (GOLDEN * i) % (Math.PI * 2);
@@ -87,14 +90,25 @@ const arcFragment = /* glsl */ `
  * Dotted night-side globe with flight arcs from `home` to each of `places`.
  * Inspired by ThreeUI's "dusk network world" globe; built here from scratch.
  */
-export default function Globe({ home, places, className = "" }) {
-  const mountRef = useRef(null);
+interface GlobeProps {
+  home: Place;
+  places: Place[];
+  className?: string;
+}
+
+interface Disposable {
+  dispose(): void;
+}
+
+export default function Globe({ home, places, className = "" }: GlobeProps) {
+  const mountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const mount = mountRef.current;
+    if (!mount) return undefined;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    let renderer;
+    let renderer: THREE.WebGLRenderer;
     try {
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     } catch {
@@ -116,18 +130,19 @@ export default function Globe({ home, places, className = "" }) {
     tilt.add(spin);
     scene.add(tilt);
 
-    const disposables = [];
-    const track = (...items) => {
-      disposables.push(...items);
-      return items[0];
+    // Everything created here is disposed together on unmount.
+    const disposables: Disposable[] = [];
+    const track = <T extends Disposable>(item: T): T => {
+      disposables.push(item);
+      return item;
     };
 
     // Ocean body: also hides the dots on the far side via the depth buffer.
     spin.add(
       new THREE.Mesh(
         track(new THREE.SphereGeometry(0.985, 64, 64)),
-        track(new THREE.MeshBasicMaterial({ color: 0x100e0c }))
-      )
+        track(new THREE.MeshBasicMaterial({ color: 0x100e0c })),
+      ),
     );
 
     const dotsGeometry = track(new THREE.BufferGeometry());
@@ -142,9 +157,9 @@ export default function Globe({ home, places, className = "" }) {
             uniforms: { uSize: { value: 12 * pixelRatio }, uColor: { value: new THREE.Color("#b9ae9f") } },
             transparent: true,
             depthWrite: false,
-          })
-        )
-      )
+          }),
+        ),
+      ),
     );
 
     const atmosphere = new THREE.Mesh(
@@ -158,22 +173,22 @@ export default function Globe({ home, places, className = "" }) {
           blending: THREE.AdditiveBlending,
           transparent: true,
           depthWrite: false,
-        })
-      )
+        }),
+      ),
     );
     scene.add(atmosphere);
 
     // Markers: a solid dot plus a ring that keeps pulsing outward.
-    const rings = [];
-    const addMarker = (place, color, size) => {
+    const rings: { ring: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>; offset: number }[] = [];
+    const addMarker = (place: Place, color: THREE.Color, size: number) => {
       const pos = latLon(place.lat, place.lon, 1.003);
       const dot = new THREE.Mesh(
         track(new THREE.CircleGeometry(size, 24)),
-        track(new THREE.MeshBasicMaterial({ color, transparent: true, depthWrite: false }))
+        track(new THREE.MeshBasicMaterial({ color, transparent: true, depthWrite: false })),
       );
       const ring = new THREE.Mesh(
         track(new THREE.RingGeometry(size * 1.2, size * 1.6, 32)),
-        track(new THREE.MeshBasicMaterial({ color, transparent: true, depthWrite: false, side: THREE.DoubleSide }))
+        track(new THREE.MeshBasicMaterial({ color, transparent: true, depthWrite: false, side: THREE.DoubleSide })),
       );
       [dot, ring].forEach((m) => {
         m.position.copy(pos);
@@ -195,7 +210,7 @@ export default function Globe({ home, places, className = "" }) {
       const angle = a.angleTo(b);
       const lift = 0.04 + Math.min(angle, 1.2) * 0.22; // capped so long-haul arcs stay in frame
       const segments = 96;
-      const pts = [];
+      const pts: THREE.Vector3[] = [];
       for (let s = 0; s <= segments; s++) {
         const t = s / segments;
         const p = new THREE.Vector3().copy(a).lerp(b, t).normalize();
@@ -204,19 +219,21 @@ export default function Globe({ home, places, className = "" }) {
       // A thin tube rather than a GL line, which is stuck at 1px. uv.x runs along it.
       const curve = new THREE.CatmullRomCurve3(pts);
       const geometry = track(new THREE.TubeGeometry(curve, segments, 0.0045, 6, false));
+      // Kept as its own object so the frame loop can update it without a lookup.
+      const uHead = { value: 0 };
       const material = track(
         new THREE.ShaderMaterial({
           vertexShader: arcVertex,
           fragmentShader: arcFragment,
-          uniforms: { uColor: { value: arcColor }, uHead: { value: 0 } },
+          uniforms: { uColor: { value: arcColor }, uHead },
           transparent: true,
           depthWrite: false,
           blending: THREE.AdditiveBlending,
-        })
+        }),
       );
       spin.add(new THREE.Mesh(geometry, material));
       addMarker(place, placeColor, 0.016);
-      return { material, phase: i * 0.37, speed: 0.22 / Math.max(angle, 0.35) };
+      return { uHead, phase: i * 0.37, speed: 0.22 / Math.max(angle, 0.35) };
     });
 
     // Face home: spin it to the front meridian, then tip it most of the way up.
@@ -240,14 +257,14 @@ export default function Globe({ home, places, className = "" }) {
     // Horizontal drag spins the globe; it drifts back to home after release.
     const drag = { active: false, x: 0, offset: 0, velocity: 0, releasedAt: -Infinity };
     const canvas = renderer.domElement;
-    const onDown = (e) => {
+    const onDown = (e: PointerEvent) => {
       drag.active = true;
       drag.x = e.clientX;
       drag.velocity = 0;
       canvas.style.cursor = "grabbing";
       canvas.setPointerCapture(e.pointerId);
     };
-    const onMove = (e) => {
+    const onMove = (e: PointerEvent) => {
       if (!drag.active) return;
       const dx = (e.clientX - drag.x) / mount.clientWidth;
       drag.x = e.clientX;
@@ -269,7 +286,7 @@ export default function Globe({ home, places, className = "" }) {
     let raf = 0;
     let last = performance.now();
     let time = 0;
-    const tick = (now) => {
+    const tick = (now: number) => {
       raf = 0;
       if (!visible) return;
       const dt = Math.min((now - last) / 1000, 0.05);
@@ -286,7 +303,7 @@ export default function Globe({ home, places, className = "" }) {
       spin.rotation.y = restSpin + sway + drag.offset;
 
       arcs.forEach((arc) => {
-        arc.material.uniforms.uHead.value = reduceMotion ? 1 : ((time * arc.speed + arc.phase) % 1.6) - 0.1;
+        arc.uHead.value = reduceMotion ? 1 : ((time * arc.speed + arc.phase) % 1.6) - 0.1;
       });
       rings.forEach(({ ring, offset }) => {
         const p = reduceMotion ? 0.5 : (time * 0.6 + offset) % 1;
@@ -299,7 +316,7 @@ export default function Globe({ home, places, className = "" }) {
     };
 
     const io = new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting;
+      visible = entry?.isIntersecting ?? false;
       if (visible && !raf) {
         last = performance.now();
         raf = requestAnimationFrame(tick);

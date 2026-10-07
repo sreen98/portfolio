@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import type { Photo } from "../types";
 
 // Resting pose for each depth in the stack, and the spread pose on hover.
 const REST = [
@@ -14,11 +15,15 @@ const FAN = [
 ];
 
 /** Stack of polaroid-style photos; click or tap sends the front one to the back. */
-export default function PhotoStack({ photos }) {
+interface PhotoStackProps {
+  photos: Photo[];
+}
+
+export default function PhotoStack({ photos }: PhotoStackProps) {
   const [order, setOrder] = useState(() => photos.map((_, i) => i));
   const [fanned, setFanned] = useState(false);
 
-  const cycle = () => setOrder(([first, ...rest]) => [...rest, first]);
+  const cycle = () => setOrder(([first = 0, ...rest]) => [...rest, first]);
 
   return (
     <div
@@ -29,6 +34,7 @@ export default function PhotoStack({ photos }) {
       {order.map((photoIndex, depth) => {
         const photo = photos[photoIndex];
         const pose = (fanned ? FAN : REST)[depth];
+        if (!photo || !pose) return null;
         const front = depth === 0;
         return (
           <motion.button
@@ -56,7 +62,7 @@ export default function PhotoStack({ photos }) {
           </motion.button>
         );
       })}
-      <p className="absolute -bottom-9 left-0 right-0 text-center font-mono text-[10px] uppercase tracking-[0.25em] text-stone-500">
+      <p className="absolute -bottom-9 left-0 right-0 text-center font-mono text-[10px] uppercase tracking-[0.25em] text-stone-400">
         Tap to shuffle
       </p>
     </div>

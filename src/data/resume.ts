@@ -1,4 +1,6 @@
-export const profile = {
+import type { Education, GlobeData, Job, Life, Photo, Profile, Project, SkillGroup, Stat } from "../types";
+
+export const profile: Profile = {
   name: "Sreenath P",
   role: "Software Engineer, Frontend",
   focus: "React · TypeScript",
@@ -16,27 +18,26 @@ export const profile = {
     "Software engineer with 5+ years building responsive frontend systems in React and TypeScript. Shipped role-based access control and permission-driven UI for a multi-tenant SaaS platform, LLM-powered job description generation and AI-scored candidate evaluation surfaces, and the frontend for ATS integrations with Greenhouse and Lever. Experience spans HR tech products (Octagnt, Skillkeepr) and a US telecom platform built from scratch for Verizon (via Wipro).",
 };
 
-export const photos = [
+export const photos: Photo[] = [
   { src: "/img/sreenath-hoodie.webp", alt: "Sreenath by the waterfront", position: "50% 30%" },
   { src: "/img/sreenath-at-work.webp", alt: "Sreenath working on a laptop", position: "50% 40%" },
   { src: "/img/sreenath-seaside.webp", alt: "Sreenath at the seaside", position: "50% 25%" },
 ];
 
-export const stats = [
+export const stats: Stat[] = [
   { value: 5, suffix: "+", label: "Years building frontend systems" },
   { value: 100, suffix: "+", label: "Components migrated with zero regressions" },
   { value: 25, prefix: "~", suffix: "%", label: "Faster initial load via code splitting" },
   { value: 80, suffix: "%+", label: "Unit test coverage on core modules" },
 ];
 
-export const experience = [
+export const experience: Job[] = [
   {
     company: "HASpaces",
     title: "Software Engineer",
     location: "Trivandrum",
     period: "Jun 2023 - Sep 2026",
-    blurb:
-      "Frontend engineer on two B2B multi-tenant SaaS products in HR tech: Octagnt and Skillkeepr.",
+    blurb: "Frontend engineer on two B2B multi-tenant SaaS products in HR tech: Octagnt and Skillkeepr.",
     products: [
       {
         name: "Octagnt",
@@ -67,8 +68,7 @@ export const experience = [
     title: "Project Engineer",
     location: "Chennai",
     period: "Dec 2020 - Jun 2023",
-    blurb:
-      "Verizon Engage: internal lead management platform for Verizon US retail representatives.",
+    blurb: "Verizon Engage: internal lead management platform for Verizon US retail representatives.",
     products: [
       {
         name: "Verizon Engage",
@@ -84,9 +84,8 @@ export const experience = [
   },
 ];
 
-export const projects = [
-  {
-    id: "ethra",
+export const projects = {
+  ethra: {
     name: "Ethra",
     kind: "Bill-splitting app · Android + Web",
     description:
@@ -101,8 +100,7 @@ export const projects = [
       { label: "Google Play", href: "https://play.google.com/store/apps/details?id=com.ethraapp.ethra" },
     ],
   },
-  {
-    id: "geovault",
+  geovault: {
     name: "GeoVault",
     kind: "Personal project · Android",
     description:
@@ -112,8 +110,7 @@ export const projects = [
     phone: "/projects/geovault-app.webp",
     links: [{ label: "Google Play", href: "https://play.google.com/store/apps/details?id=com.geovault.app" }],
   },
-  {
-    id: "ajhomes",
+  ajhomes: {
     name: "AJ Homes",
     kind: "Property agency website · UK",
     description:
@@ -122,8 +119,7 @@ export const projects = [
     web: "/projects/ajhomes.webp",
     links: [{ label: "Visit site", href: "https://www.ajhomeslettings.co.uk/" }],
   },
-  {
-    id: "tastemagic",
+  tastemagic: {
     name: "Taste Magic",
     kind: "Internal staff tool · Multi-tenant PWA",
     description:
@@ -133,31 +129,28 @@ export const projects = [
     tags: ["React", "Vite", "Mantine", "TanStack Query", "PWA"],
     links: [{ label: "Open app", href: "https://app.tastemagic.in/login" }],
   },
-];
-
-export const prephub = {
-  id: "prephub",
-  name: "PrepHub",
-  kind: "Personal project · Interview preparation platform",
-  description:
-    "An interview preparation web app I built for my own learning. Guides across front end, back end, AI engineering, DevOps and system design, with a quiz mode, spaced-repetition daily review, a timed interview simulator, and JavaScript and React playgrounds with graded coding challenges.",
-  stats: [
-    { value: "76", label: "Guides" },
-    { value: "157", label: "Coding challenges" },
-    { value: "14", label: "Cheat sheets" },
-  ],
-  tags: ["React 19", "TypeScript", "Vite", "Tailwind CSS", "PWA"],
-  web: "/projects/prephub.webp",
-  url: "sreen98.github.io/prephub",
-  // Moves to the new domain once it is bought; update both links then.
-  links: [
-    { label: "Live site", href: "https://sreen98.github.io/prephub/" },
-    { label: "GitHub", href: "https://github.com/sreen98/prephub" },
-  ],
-};
+  prephub: {
+    name: "PrepHub",
+    kind: "Personal project · Interview preparation platform",
+    description:
+      "An interview preparation web app I built for my own learning. Guides across front end, back end, AI engineering, DevOps and system design, with a quiz mode, spaced-repetition daily review, a timed interview simulator, and JavaScript and React playgrounds with graded coding challenges.",
+    stats: [
+      { value: "76", label: "Guides" },
+      { value: "157", label: "Coding challenges" },
+      { value: "14", label: "Cheat sheets" },
+    ],
+    tags: ["React 19", "TypeScript", "Vite", "Tailwind CSS", "PWA"],
+    web: "/projects/prephub.webp",
+    url: "prephub.sreenathp.com",
+    links: [
+      { label: "Live site", href: "https://prephub.sreenathp.com/" },
+      { label: "GitHub", href: "https://github.com/sreen98/prephub" },
+    ],
+  },
+} satisfies Record<string, Project>;
 
 // Contact globe: home base plus where the work has shipped to.
-export const globe = {
+export const globe: GlobeData = {
   home: { name: "Kochi", note: "Home", lat: 9.98, lon: 76.28 },
   places: [
     { name: "Trivandrum", note: "HASpaces", lat: 8.52, lon: 76.94 },
@@ -168,7 +161,7 @@ export const globe = {
 };
 
 // Outside work.
-export const life = {
+export const life: Life = {
   travel: [
     { country: "Vietnam", code: "VN", photo: "/img/life/vietnam.webp", position: "50% 35%" },
     { country: "Kazakhstan", code: "KZ", photo: "/img/life/kazakhstan.webp", position: "50% 30%" },
@@ -188,13 +181,15 @@ export const life = {
       date: "Dec 2024",
       platform: "Medium",
       cover: "/img/life/kazakhstan-guide.webp",
+      coverAlt: "Snowy mountain lake in Kazakhstan",
       href: "https://medium.com/@sreenz/exploring-kazakhstan-in-winter-a-complete-travel-guide-414cf3b8afae",
-      blurb: "Day-by-day itinerary from Delhi to Almaty: metro rides, Green Bazaar, Panfilov Park and the Alma Arasan trek.",
+      blurb:
+        "Day-by-day itinerary from Delhi to Almaty: metro rides, Green Bazaar, Panfilov Park and the Alma Arasan trek.",
     },
   ],
 };
 
-export const skillGroups = [
+export const skillGroups: SkillGroup[] = [
   { title: "Languages", items: ["JavaScript (ES6+)", "TypeScript", "HTML5", "CSS3"] },
   {
     title: "React & Frameworks",
@@ -220,7 +215,7 @@ export const skillGroups = [
   },
 ];
 
-export const education = {
+export const education: Education = {
   degree: "B.Tech, Computer Science",
   school: "Adi Shankara Institute of Engineering and Technology, Kalady",
   period: "2016 - 2020",
