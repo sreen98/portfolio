@@ -1,16 +1,26 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: ["./src/**/*.{js,jsx,ts,tsx}"],
+export default {
+  content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
-    colors: {
-      aboutText: "#408E91",
-      navBarBG: "#2E4F4F",
-      navBarName: "#D8D8D8",
-      backGround: "#D8D8D8",
-      downloadButton: "#408E91",
-      downloadButton1: "#E49393",
+    extend: {
+      colors: {
+        // Warm near-black surfaces and a single signal-orange accent.
+        ink: {
+          950: "#0b0a09",
+          900: "#131210",
+          800: "#1b1916",
+          700: "#25221e",
+        },
+        accent: {
+          DEFAULT: "#ff6b35",
+        },
+      },
+      fontFamily: {
+        sans: ['"IBM Plex Sans"', "system-ui", "sans-serif"],
+        display: ['"Archivo"', '"IBM Plex Sans"', "sans-serif"],
+        mono: ['"IBM Plex Mono"', "ui-monospace", "monospace"],
+      },
     },
-    extend: {},
   },
   plugins: [],
 };
