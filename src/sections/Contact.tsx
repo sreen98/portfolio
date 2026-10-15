@@ -46,6 +46,10 @@ export default function Contact() {
             </Reveal>
             <Reveal delay={0.08}>
               <p className="mt-5 text-stone-400">Based in {profile.location}.</p>
+              <p className="mt-3 max-w-md text-stone-400">
+                I also take on <span className="text-white">freelance work</span>. If you need a website or an app
+                built, get in touch.
+              </p>
             </Reveal>
 
             <Reveal delay={0.16} className="mt-10 flex flex-wrap items-center gap-3">

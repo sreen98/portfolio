@@ -89,8 +89,8 @@ export const projects = {
     name: "Ethra",
     kind: "Bill-splitting app · Android + Web",
     description:
-      "Group expense splitting app. Bills are organised by event, friends join through a shared link with no sign-up, and multiple people can edit the same bill. Handles consumption-based splits, multiple taxes and discounts, and shares summaries over PDF, SMS or WhatsApp.",
-    tags: ["React", "Android", "Web app", "PDF export"],
+      "Bill splitting app for groups, trips and flatmates. Put every bill from a weekend in one group, record who paid (even when several people did), and settle up once at the end in the fewest transfers, with a breakdown of why each amount is owed. Splits by item, units, shares, percentage or amount, handles multiple taxes, tips and discounts, and shares summaries as PDF or over WhatsApp.",
+    tags: ["React Native", "Expo", "Web app", "Groups & settle up", "PDF export"],
     icon: "/projects/ethra-icon.webp",
     web: "/projects/ethra-web.webp",
     phone: "/projects/ethra-app.webp",
@@ -104,11 +104,22 @@ export const projects = {
     name: "GeoVault",
     kind: "Personal project · Android",
     description:
-      "A private location notebook for travellers and foodies. Save places with notes, tags and nine categories, search across everything, and open any spot in your maps app. Local-first with no server or tracking, plus optional scheduled Google Drive backups and JSON export.",
-    tags: ["Android", "Local-first", "Google Drive backup", "Full-text search"],
+      "A private location notebook for travellers and foodies. Save places with notes, tags and nine categories, group them into collections, and find any spot again with full-text search, recent searches or browse by category, then open it in your maps app. Local-first with no server or tracking, plus optional scheduled Google Drive backups and JSON export.",
+    tags: ["React Native", "Local-first", "Collections", "Google Drive backup", "Full-text search"],
     icon: "/projects/geovault-icon.webp",
     phone: "/projects/geovault-app.webp",
     links: [{ label: "Google Play", href: "https://play.google.com/store/apps/details?id=com.geovault.app" }],
+  },
+  signalwise: {
+    name: "Signalwise",
+    kind: "Personal project · Android",
+    description:
+      "An honest Wi-Fi analyzer with no ads, no subscription and no tracking. Lists nearby networks with signal, band, channel and security, recommends the least crowded channel for your router, and adds a live signal meter for finding dead zones and a speed test that tells you whether Wi-Fi or your internet plan is the bottleneck. In English and Hindi.",
+    note: "In closed testing on Google Play ahead of the public release.",
+    tags: ["Kotlin", "Jetpack Compose", "Offline", "M-Lab speed test"],
+    icon: "/projects/signalwise-icon.webp",
+    phone: "/projects/signalwise-app.webp",
+    links: [{ label: "Google Play", href: "https://play.google.com/store/apps/details?id=com.signalwise.app" }],
   },
   ajhomes: {
     name: "AJ Homes",
@@ -125,19 +136,19 @@ export const projects = {
     description:
       "Web app for the staff of an event-management business to run a booking from first enquiry to completed event - capture a lead, plan each service (catering, photography, decoration, makeup, return gifts), generate a bill, track payments, coordinate vendors, and follow through with reminders, reviews, and a full audit trail.",
     note: "Internal staff tool (not customer-facing), multi-tenant, installable PWA. Tenant-agnostic - branding comes from the API, never hardcoded.",
-    modules: ["Leads", "Bookings", "Services", "Billing", "Payments", "Vendors", "Reminders", "Reviews", "Audit trail"],
     tags: ["React", "Vite", "Mantine", "TanStack Query", "PWA"],
-    links: [{ label: "Open app", href: "https://app.tastemagic.in/login" }],
+    web: "/projects/tastemagic.webp",
+    links: [],
   },
   prephub: {
     name: "PrepHub",
     kind: "Personal project · Interview preparation platform",
     description:
-      "An interview preparation web app I built for my own learning. Guides across front end, back end, AI engineering, DevOps and system design, with a quiz mode, spaced-repetition daily review, a timed interview simulator, and JavaScript and React playgrounds with graded coding challenges.",
+      "An interview preparation web app I built for my own learning, with a study-notebook design. Guides across front end, back end, AI engineering, DevOps and system design, with a quiz mode, spaced-repetition daily review, a timed interview simulator, and JavaScript, TypeScript and React playgrounds in a VS Code editor with graded coding challenges.",
     stats: [
-      { value: "76", label: "Guides" },
-      { value: "157", label: "Coding challenges" },
-      { value: "14", label: "Cheat sheets" },
+      { value: "86", label: "Guides" },
+      { value: "1,666", label: "Interview questions" },
+      { value: "162", label: "Coding challenges" },
     ],
     tags: ["React 19", "TypeScript", "Vite", "Tailwind CSS", "PWA"],
     web: "/projects/prephub.webp",

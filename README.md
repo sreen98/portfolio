@@ -29,7 +29,8 @@ npm run dev     # http://localhost:3000
 
 ## Git hooks
 
-- **pre-commit**: Prettier and ESLint on staged files; rejects files over 1 MB.
+- **pre-commit**: Prettier and ESLint on staged files; rejects files over 1 MB; rejects commits whose author or committer is Claude/Anthropic.
+- **commit-msg**: rejects Claude/Anthropic `Co-authored-by` trailers and "Generated with" lines.
 - **pre-push**: `npm run verify`, so anything that would fail the Cloudflare build fails locally first.
 
 ## Project structure

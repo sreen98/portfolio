@@ -2,6 +2,7 @@
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import type { Project } from "../types";
 import * as content from "./resume";
 
 /** Every string in the exported content, with its path for error messages. */
@@ -38,9 +39,10 @@ describe("site content", () => {
     expect(missing).toEqual([]);
   });
 
-  it("gives every project at least one link", () => {
+  it("gives every project a link or a screenshot", () => {
     for (const project of Object.values(content.projects)) {
-      expect(project.links.length, project.name).toBeGreaterThan(0);
+      const p: Project = project;
+      expect(p.links.length > 0 || Boolean(p.web ?? p.phone), p.name).toBe(true);
     }
   });
 });

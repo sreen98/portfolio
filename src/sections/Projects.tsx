@@ -9,7 +9,7 @@ interface FrameProps {
   className?: string;
 }
 
-function BrowserFrame({ src, alt, url, className = "" }: FrameProps & { url: string }) {
+function BrowserFrame({ src, alt, url, className = "" }: FrameProps & { url?: string }) {
   return (
     <div
       className={`overflow-hidden rounded-xl border border-white/10 bg-ink-800 shadow-2xl shadow-black/60 ${className}`}
@@ -18,9 +18,11 @@ function BrowserFrame({ src, alt, url, className = "" }: FrameProps & { url: str
         <span className="h-2 w-2 rounded-full bg-white/15" />
         <span className="h-2 w-2 rounded-full bg-white/15" />
         <span className="h-2 w-2 rounded-full bg-white/15" />
-        <span className="ml-3 truncate rounded-md bg-white/[0.05] px-2 py-0.5 font-mono text-[10px] text-stone-400">
-          {url}
-        </span>
+        {url && (
+          <span className="ml-3 truncate rounded-md bg-white/[0.05] px-2 py-0.5 font-mono text-[10px] text-stone-400">
+            {url}
+          </span>
+        )}
       </div>
       <img src={src} alt={alt} width={1200} height={750} loading="lazy" className="block h-auto w-full" />
     </div>
@@ -34,7 +36,7 @@ function PhoneFrame({ src, alt, className = "" }: FrameProps) {
         src={src}
         alt={alt}
         width={360}
-        height={780}
+        height={800}
         loading="lazy"
         className="block h-auto w-full rounded-[1.2rem]"
       />
@@ -67,7 +69,7 @@ function Header({ project }: { project: Project }) {
 function Footer({ project }: { project: Project }) {
   return (
     <div className="relative z-10 mt-6">
-      <ul className="mb-4 flex flex-wrap gap-1.5">
+      <ul className={`flex flex-wrap gap-1.5 ${project.links.length ? "mb-4" : ""}`}>
         {project.tags.map((tag) => (
           <li key={tag} className="rounded-full border border-white/10 px-2.5 py-0.5 text-[11px] text-stone-400">
             {tag}
@@ -93,14 +95,14 @@ function Footer({ project }: { project: Project }) {
 }
 
 export default function Projects() {
-  const { ethra, geovault, ajhomes, tastemagic, prephub } = projects;
+  const { ethra, geovault, ajhomes, tastemagic, signalwise, prephub } = projects;
 
   return (
     <section id="projects" className="relative mx-auto max-w-6xl scroll-mt-24 px-6 py-14 md:py-20">
       <SectionHeading title="Projects" />
 
-      <div className="grid gap-5 lg:grid-cols-3">
-        {/* Ethra: wide card with web + phone mockups */}
+      <div className="grid gap-5 lg:grid-cols-2">
+        {/* Ethra: full-width card with web + phone mockups */}
         <Reveal className="lg:col-span-2">
           <SpotlightCard className="flex h-full flex-col p-7">
             <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] md:items-center">
@@ -127,64 +129,8 @@ export default function Projects() {
           </SpotlightCard>
         </Reveal>
 
-        {/* GeoVault: tall card with phone */}
-        <Reveal delay={0.08} className="lg:row-span-2">
-          <SpotlightCard className="flex h-full flex-col p-7">
-            <Header project={geovault} />
-            <div className="relative mt-8 flex flex-1 items-end justify-center overflow-hidden">
-              <div className="pointer-events-none absolute bottom-0 h-2/3 w-2/3 rounded-full bg-accent/10 blur-3xl" />
-              <PhoneFrame
-                src={geovault.phone}
-                alt="GeoVault saved places list"
-                className="relative w-[62%] max-w-[230px] translate-y-6 transition-transform duration-700 group-hover:translate-y-2"
-              />
-            </div>
-            <Footer project={geovault} />
-          </SpotlightCard>
-        </Reveal>
-
-        {/* AJ Homes: site screenshot */}
-        <Reveal delay={0.1}>
-          <SpotlightCard className="flex h-full flex-col p-7">
-            <BrowserFrame
-              src={ajhomes.web}
-              alt="AJ Homes property search"
-              url="ajhomeslettings.co.uk"
-              className="mb-7 transition-transform duration-700 group-hover:-translate-y-1"
-            />
-            <Header project={ajhomes} />
-            <div className="mt-auto">
-              <Footer project={ajhomes} />
-            </div>
-          </SpotlightCard>
-        </Reveal>
-
-        {/* Taste Magic: module map */}
-        <Reveal delay={0.16}>
-          <SpotlightCard className="flex h-full flex-col p-7">
-            <div className="mb-7 rounded-xl border border-white/10 bg-ink-800/80 p-4">
-              <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-stone-400">Workspace modules</p>
-              <ul className="flex flex-wrap gap-1.5">
-                {tastemagic.modules.map((m, i) => (
-                  <li
-                    key={m}
-                    className="rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-xs text-stone-300 transition-colors duration-300 group-hover:border-accent/40"
-                    style={{ transitionDelay: `${i * 30}ms` }}
-                  >
-                    {m}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <Header project={tastemagic} />
-            <div className="mt-auto">
-              <Footer project={tastemagic} />
-            </div>
-          </SpotlightCard>
-        </Reveal>
-
         {/* PrepHub: full-width, it is the biggest of the side projects */}
-        <Reveal className="lg:col-span-3">
+        <Reveal className="lg:col-span-2">
           <SpotlightCard className="p-7">
             <div className="grid gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] md:items-center">
               <div>
@@ -205,6 +151,68 @@ export default function Projects() {
                 url={prephub.url}
                 className="transition-transform duration-700 group-hover:-translate-y-1"
               />
+            </div>
+          </SpotlightCard>
+        </Reveal>
+
+        {/* GeoVault and Signalwise: phone cards, side by side */}
+        <Reveal>
+          <SpotlightCard className="flex h-full flex-col p-7">
+            <Header project={geovault} />
+            <div className="relative mt-8 flex flex-1 items-end justify-center overflow-hidden">
+              <div className="pointer-events-none absolute bottom-0 h-2/3 w-2/3 rounded-full bg-accent/10 blur-3xl" />
+              <PhoneFrame
+                src={geovault.phone}
+                alt="GeoVault saved places list"
+                className="relative w-[62%] max-w-[230px] translate-y-6 transition-transform duration-700 group-hover:translate-y-2"
+              />
+            </div>
+            <Footer project={geovault} />
+          </SpotlightCard>
+        </Reveal>
+
+        <Reveal delay={0.08}>
+          <SpotlightCard className="flex h-full flex-col p-7">
+            <Header project={signalwise} />
+            <div className="relative mt-8 flex flex-1 items-end justify-center overflow-hidden">
+              <div className="pointer-events-none absolute bottom-0 h-2/3 w-2/3 rounded-full bg-accent/10 blur-3xl" />
+              <PhoneFrame
+                src={signalwise.phone}
+                alt="Signalwise nearby networks list"
+                className="relative w-[62%] max-w-[230px] translate-y-6 transition-transform duration-700 group-hover:translate-y-2"
+              />
+            </div>
+            <Footer project={signalwise} />
+          </SpotlightCard>
+        </Reveal>
+
+        {/* AJ Homes: site screenshot */}
+        <Reveal>
+          <SpotlightCard className="flex h-full flex-col p-7">
+            <BrowserFrame
+              src={ajhomes.web}
+              alt="AJ Homes property search"
+              url="ajhomeslettings.co.uk"
+              className="mb-7 transition-transform duration-700 group-hover:-translate-y-1"
+            />
+            <Header project={ajhomes} />
+            <div className="mt-auto">
+              <Footer project={ajhomes} />
+            </div>
+          </SpotlightCard>
+        </Reveal>
+
+        {/* Taste Magic: login screenshot, no address shown since it is an internal tool */}
+        <Reveal delay={0.08}>
+          <SpotlightCard className="flex h-full flex-col p-7">
+            <BrowserFrame
+              src={tastemagic.web}
+              alt="Taste Magic workspace sign-in"
+              className="mb-7 transition-transform duration-700 group-hover:-translate-y-1"
+            />
+            <Header project={tastemagic} />
+            <div className="mt-auto">
+              <Footer project={tastemagic} />
             </div>
           </SpotlightCard>
         </Reveal>
